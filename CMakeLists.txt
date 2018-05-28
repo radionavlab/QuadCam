@@ -18,7 +18,7 @@ endif()
 
 
 
-#Libraries
+# Libraries
 add_library(quad_cam_lib
     include/camera/snapcam.h
     src/camera/snapcam.cc
@@ -39,9 +39,9 @@ add_library(quad_cam_client_lib
 
 
 # Executables
-add_executable(quad_cam_server_exec src/exe/server.cc)
+add_executable(quad_cam_server_exec src/exe/server.cc src/utils/utils.cc)
 target_link_libraries(quad_cam_server_exec quad_cam_lib quad_cam_server_lib)
 
-add_executable(quad_cam_client_exec src/exe/client.cc)
+add_executable(quad_cam_client_exec src/exe/client.cc src/utils/utils.cc)
 target_link_libraries(quad_cam_client_exec quad_cam_client_lib)
 

@@ -62,7 +62,7 @@ CameraServer::CameraServer(std::string path)
 
 void CameraServer::FrameHandler(camera::ICameraFrame* frame) {
     if(this->camera_->cameraType() == CAM_FORWARD) {
-        this->PublishFrame(frame->fd, frame->size, 640, 480);
+        this->PublishFrame(frame, 640, 480);
     } else if(this->camera_->cameraType() == CAM_DOWN) {
         std::cout << "This feature not yet implemented! Images can stream, but the bytes are out of order. Please fix this in node.cc!" << std::endl;
     }
@@ -75,7 +75,7 @@ void CameraServer::StartCamera() {
     cfg.gain            = 50;
     cfg.cameraId        = 1;
     cfg.func            = CAM_FORWARD;
-    cfg.previewSize     = CameraSizes::VGASize();
+    cfg.previewSize     = CameraSizes::UHDSize();
     cfg.focusMode       = "continuous-video";
     cfg.whiteBalance    = "auto";
     cfg.ISO             = "auto";
@@ -102,7 +102,16 @@ CameraServer::~CameraServer() {
     unlink(this->path_.c_str());
 };
 
-void CameraServer::PublishFrame(const FD& frame_fd, const size_t& data_size, const size_t& width, const size_t& height) {
+void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width, const size_t& height) {
+    if(this->busy_publishing) {
+        return;
+    } else {
+        this->busy_publishing = true;
+    }
+
+    const size_t data_size = frame->size;
+    const FD frame_fd = frame->fd;
+
     struct sockaddr_un client_address;
     socklen_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
 
@@ -122,13 +131,12 @@ void CameraServer::PublishFrame(const FD& frame_fd, const size_t& data_size, con
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
         SendFD(client_fd, frame_fd, frame_info);
-        // TODO Do I close this?
-        // close(client_fd);
     }
   
-    // Permit subscribers to use the frame for 100 ms 
-    // TODO this prevents the client from reading the information
-    // std::this_thread::sleep_for(std::chrono::milliseconds(200));  
+    // Permit subscribers to use the frame for 200 ms 
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));  
+
+    this->busy_publishing = false;
 }
 
 void CameraServer::SendFD(const FD& client_fd, const FD& frame_fd, const std::string& frame_info) {

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <memory>
 
 namespace snapcam {
     typedef int FD;
@@ -41,7 +42,7 @@ namespace snapcam {
 
     typedef struct {
         FrameMetaData meta_data;
-        uint8_t* data;
+        std::shared_ptr<uint8_t> data;
     } FrameData;
 
 }; // namespace snapcam

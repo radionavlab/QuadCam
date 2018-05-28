@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <memory>
 
 namespace snapcam {
 
@@ -51,12 +53,12 @@ FrameData CameraClient::RequestFrame() {
     const int fd = *((int*) c_data);
 
     // Memory map the buffer into this process' virtual memory space
-    // std::shared_ptr<int> sp( new int[10], std::default_delete<int[]>() );
-    // uint8_t* data = (uint8_t *) mmap(NULL, meta_data.data_size, PROT_READ, MAP_SHARED, fd, 0);
-    // memcpy(buff, data, meta_data.data_size);
-    // close(fd);
+    std::shared_ptr<uint8_t> buff( new uint8_t[meta_data.data_size], std::default_delete<uint8_t[]>());
+    uint8_t* data = (uint8_t *) mmap(NULL, meta_data.data_size, PROT_READ, MAP_SHARED, fd, 0);
+    memcpy(buff.get(), data, meta_data.data_size);
+    close(fd);
 
-    return FrameData{meta_data, NULL};
+    return FrameData{meta_data, buff};
 };
 
 CameraClient::ConnectionRAII::ConnectionRAII(CameraClient* client)
@@ -74,6 +76,21 @@ CameraClient::ConnectionRAII::ConnectionRAII(CameraClient* client)
     server_address.sun_family = AF_UNIX;
     strncpy(server_address.sun_path, client_->path_.c_str(), sizeof(server_address.sun_path) -1); 
 
+    // Wait for server to create socket address
+    while(true) {
+        if( access( client_->path_.c_str(), F_OK ) < 0 ) {
+            if(errno == ENOENT) {
+                std::cout << "Waiting for server..." << std::endl;
+                sleep(1);
+            } else {
+                client_->ReportError("Error checking port exists.");
+            }
+        } else {
+            break;
+        }
+    }
+
+    // Connect
     if (connect(client_->server_fd_, (struct sockaddr *)&server_address, sizeof(struct sockaddr_un)) < 0) {
         client->ReportError("Client Socket Connection");
     }

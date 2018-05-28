@@ -1,18 +1,18 @@
 // Author: Tucker Haydon
 
 #include "snapcam.h"
+#include "utils.h"
 
 #include <iostream>
 #include <thread>
 
-SnapCam::SnapCam(CamConfig cfg)
-{
+
+SnapCam::SnapCam(CamConfig cfg) {
     cb_=nullptr;
     initialize(cfg);
 }
 
-int SnapCam::initialize(CamConfig cfg)
-{
+int SnapCam::initialize(CamConfig cfg) {
 
     // Ensure camera is connected and accessible
     if (camera::getNumberOfCameras() < 1) {
@@ -109,8 +109,7 @@ void SnapCam::start() {
     camera_->startRecording();
 }
 
-SnapCam::~SnapCam() 
-{
+SnapCam::~SnapCam() {
     camera_->stopRecording();
     camera_->stopPreview();
 
@@ -118,8 +117,7 @@ SnapCam::~SnapCam()
     camera::ICameraDevice::deleteInstance(&camera_);
 }
 
-void SnapCam::onError() 
-{
+void SnapCam::onError() {
     printf("camera error!, aborting\n");
     exit(EXIT_FAILURE);
 }
@@ -134,8 +132,7 @@ void SnapCam::onVideoFrame(camera::ICameraFrame *frame) {
     cb_(frame);
 }
 
-void SnapCam::setListener(CallbackFunction fun)
-{
+void SnapCam::setListener(CallbackFunction fun) {
     cb_ = fun;
 }
 

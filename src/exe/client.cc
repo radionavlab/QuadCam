@@ -1,6 +1,7 @@
 // Author: Tucker Haydon
 
 #include "camera_client.h"
+#include "utils.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -31,6 +32,7 @@ int main(int argc, char** argv) {
     while(OK) {
         snapcam::FrameData frame_data = client.RequestFrame();
         std::cout << frame_data.meta_data.width << ", " << frame_data.meta_data.height << std::endl;
+        TicToc();
     }
 
     return EXIT_SUCCESS;
