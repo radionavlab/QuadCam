@@ -1,10 +1,10 @@
 // Author: Tucker Haydon
 
 #include "camera_server.h"
+#include "utils.h"
 
 #include <iostream>
 #include <cstdlib>
-#include <fcntl.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -16,12 +16,20 @@
 #include <sys/un.h>
 #include <thread>
 #include <chrono>
+#include <csignal>
 
 
 namespace snapcam {
 
 CameraServer::CameraServer(std::string path) 
     : path_(path) {
+
+    // Configure: Ignore broken pipes
+    std::signal(SIGPIPE, SIG_IGN);
+    
+    // Start the camera
+    this->StartCamera();
+
     struct sockaddr_un server_address;
     constexpr size_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
 
@@ -52,11 +60,47 @@ CameraServer::CameraServer(std::string path)
     }
 };
 
-CameraServer::~CameraServer() {
-    close(this->fd_);
-    unlink(this->path_.c_str());
+void CameraServer::FrameHandler(camera::ICameraFrame* frame) {
+    if(this->camera_->cameraType() == CAM_FORWARD) {
+        this->PublishFrame(frame->fd, frame->size, 640, 480);
+    } else if(this->camera_->cameraType() == CAM_DOWN) {
+        std::cout << "This feature not yet implemented! Images can stream, but the bytes are out of order. Please fix this in node.cc!" << std::endl;
+    }
+};
 
-}
+void CameraServer::StartCamera() {
+    // TODO: Hard-coded camera config values
+    CamConfig cfg;
+    cfg.exposure        = 100;
+    cfg.gain            = 50;
+    cfg.cameraId        = 1;
+    cfg.func            = CAM_FORWARD;
+    cfg.previewSize     = CameraSizes::VGASize();
+    cfg.focusMode       = "continuous-video";
+    cfg.whiteBalance    = "auto";
+    cfg.ISO             = "auto";
+    cfg.previewFormat   = "yuv420sp";
+    cfg.brightness      = 3;
+    cfg.sharpness       = 18;
+    cfg.contrast        = 5;
+
+    this->camera_ = std::make_shared<SnapCam>(cfg);
+    this->camera_->setListener(std::bind(&CameraServer::FrameHandler, this, std::placeholders::_1));
+    this->camera_->start();
+};
+
+CameraServer::~CameraServer() {
+    if (shutdown(this->fd_, SHUT_RDWR) < 0) {
+        if (errno != ENOTCONN && errno != EINVAL) {
+            this->ReportError("Client Socket Shutdown");
+        }
+    }
+
+    if (close(this->fd_) < 0) { 
+        this->ReportError("Client Socket Close");
+    }
+    unlink(this->path_.c_str());
+};
 
 void CameraServer::PublishFrame(const FD& frame_fd, const size_t& data_size, const size_t& width, const size_t& height) {
     struct sockaddr_un client_address;
@@ -78,7 +122,8 @@ void CameraServer::PublishFrame(const FD& frame_fd, const size_t& data_size, con
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
         SendFD(client_fd, frame_fd, frame_info);
-        close(client_fd);
+        // TODO Do I close this?
+        // close(client_fd);
     }
   
     // Permit subscribers to use the frame for 100 ms 
@@ -108,7 +153,10 @@ void CameraServer::SendFD(const FD& client_fd, const FD& frame_fd, const std::st
     msg.msg_controllen = cmsg->cmsg_len;
 
     if (sendmsg(client_fd, &msg, 0) < 0) {
-        this->ReportError("Failed to send FD.");
+        // Ignore broken pipes
+        if(errno != EPIPE) {
+            this->ReportError("Failed to send FD.");
+        }
     }
 }
 

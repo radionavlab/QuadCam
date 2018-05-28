@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <iostream>
 
 long long CurrentTimeMillis() {
     return std::chrono::duration_cast< std::chrono::milliseconds >(

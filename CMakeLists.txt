@@ -6,6 +6,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -Wno-format-security -Wno-lit
 
 include_directories(
     include/utils
+    include/client
+    include/server
+    include/camera
 )
 
 find_library(CAMERA_LIBS NAMES camera PATHS /usr/lib)
@@ -13,22 +16,27 @@ if (NOT CAMERA_LIBS)
     message(WARNING "Could not find camera libraries, not building targets that depend on it")
 endif()
 
-## Camera library
+
+
+#Libraries
 add_library(quad_cam_lib
     include/camera/snapcam.h
     src/camera/snapcam.cc
 )
 target_link_libraries(quad_cam_lib ${CAMERA_LIBS})
 
-# Server Library
 add_library(quad_cam_server_lib
     include/server/camera_server.h
-    src/server/camera_server.cc)
+    src/server/camera_server.cc
+)
+target_link_libraries(quad_cam_server_lib quad_cam_lib)
 
-# Client Library
 add_library(quad_cam_client_lib
     include/client/camera_client.h
-    src/client/camera_client.cc)
+    src/client/camera_client.cc
+)
+
+
 
 # Executables
 add_executable(quad_cam_server_exec src/exe/server.cc)

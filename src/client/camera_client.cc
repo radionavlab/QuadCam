@@ -5,21 +5,24 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 namespace snapcam {
 
 CameraClient::CameraClient(const std::string& path)
     : path_{path} {
-    this->Connect();
 };
 
-void CameraClient::HandleError(const char* msg) {
+void CameraClient::ReportError(const char* msg) {
    std::cout << msg << std::endl; 
    std::cout << "Errno: " << errno << std::endl;
    exit(EXIT_FAILURE);
 };
 
 FrameData CameraClient::RequestFrame() {
+    // RAII object for connection
+    ConnectionRAII connection(this);
+
     static const int BUFFER_SIZE = 256;
     struct msghdr msg = {0};
 
@@ -34,7 +37,7 @@ FrameData CameraClient::RequestFrame() {
 
     // Receive the message containing the file descriptor
     if (recvmsg(this->server_fd_, &msg, 0) < 0) {
-        this->HandleError("Could not receive message.");
+        this->ReportError("Could not receive message.");
     }
 
     // Extract the meta data from the message
@@ -56,22 +59,37 @@ FrameData CameraClient::RequestFrame() {
     return FrameData{meta_data, NULL};
 };
 
-void CameraClient::Connect() {
+CameraClient::ConnectionRAII::ConnectionRAII(CameraClient* client)
+    : client_{client} {
+
     struct sockaddr_un server_address;
 
     // Creating socket file descriptor
-    if ((this->server_fd_ = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        this->HandleError("Client Socket Creation");
+    if ((client_->server_fd_ = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        client_->ReportError("Client Socket Creation");
     }
-  
+
     // Connect to unix port server
     memset(&server_address, '0', sizeof(struct sockaddr_un)); 
     server_address.sun_family = AF_UNIX;
-    strncpy(server_address.sun_path, this->path_.c_str(), sizeof(server_address.sun_path) -1); 
-  
-    if (connect(this->server_fd_, (struct sockaddr *)&server_address, sizeof(struct sockaddr_un)) < 0) {
-        this->HandleError("Client Socket Connection");
+    strncpy(server_address.sun_path, client_->path_.c_str(), sizeof(server_address.sun_path) -1); 
+
+    if (connect(client_->server_fd_, (struct sockaddr *)&server_address, sizeof(struct sockaddr_un)) < 0) {
+        client->ReportError("Client Socket Connection");
+    }
+}
+
+CameraClient::ConnectionRAII::~ConnectionRAII() {
+    if (shutdown(client_->server_fd_, SHUT_RDWR) < 0) {
+        if (errno != ENOTCONN && errno != EINVAL) {
+            client_->ReportError("Client Socket Shutdown");
+        }
+    }
+
+    if (close(client_->server_fd_) < 0) { 
+        client_->ReportError("Client Socket Close");
     }
 }
 
 };
+
