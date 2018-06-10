@@ -3,6 +3,7 @@
 #include <functional>
 #include <camera.h>
 #include <camera_parameters.h>
+#include <iostream>
 
 // workaround to only have to define these once
 struct CameraSizes {
@@ -45,31 +46,34 @@ struct CamConfig {
 typedef std::function<void(camera::ICameraFrame *frame)> CallbackFunction;
 
 /**
- * CLASS  SnapCam
+ * CLASS  QuadCam
  *
  * inherits ICameraListers which provides core functionality
  */
-class SnapCam : camera::ICameraListener
+class QuadCam : camera::ICameraListener
 {
 public:
+        QuadCam();
+	QuadCam(const CamConfig& cfg);
+	~QuadCam();
 
-	SnapCam(CamConfig cfg);
-	~SnapCam();
+	void SetListener(CallbackFunction fun);  // register a function callback
+        void Start();
+        int CameraType();
 
-	void setListener(CallbackFunction fun);  // register a function callback
-        void start();
-        int cameraType();
-
-        void updateGain(int gain);
-        void updateExposure(int exposure);
+        void UpdateGain(int gain);
+        void UpdateExposure(int exposure);
 
 	/* listener methods */
 	virtual void onError();
         virtual void onVideoFrame(camera::ICameraFrame *frame);
         virtual void onPreviewFrame(camera::ICameraFrame *frame);
 
+        static const CamConfig DEFAULT_CONFIG;
+
 private:
-	int initialize(CamConfig cfg);
+	void Initialize();
+        void Configure(const CamConfig& cfg);
 
 	camera::ICameraDevice *camera_;
 	camera::CameraParams params_;

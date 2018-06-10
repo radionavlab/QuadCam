@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace snapcam {
+namespace quadcam {
 
 class CameraClient {
 public:
@@ -28,4 +28,4 @@ private:
     };
 };
 
-}; // namespace snapcam
+}; // namespace quadcam

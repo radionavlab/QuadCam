@@ -7,7 +7,7 @@
 #include <sstream>
 #include <memory>
 
-namespace snapcam {
+namespace quadcam {
     typedef int FD;
 
     typedef struct {
@@ -45,4 +45,4 @@ namespace snapcam {
         std::shared_ptr<uint8_t> data;
     } FrameData;
 
-}; // namespace snapcam
+}; // namespace quadcam

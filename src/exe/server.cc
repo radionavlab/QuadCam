@@ -27,7 +27,8 @@ void ConfigureSigHandler() {
 int main(int argc, char** argv) {
 
     ConfigureSigHandler();
-    snapcam::CameraServer server("/tmp/camera_server");
+    quadcam::CameraServer server("/tmp/camera_server");
+    server.StartCamera();
     while(OK && sleep(1) == 0);
     return EXIT_SUCCESS;
 }

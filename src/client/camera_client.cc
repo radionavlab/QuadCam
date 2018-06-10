@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #include <memory>
 
-namespace snapcam {
+namespace quadcam {
 
 CameraClient::CameraClient(const std::string& path)
     : path_{path} {
@@ -108,5 +108,5 @@ CameraClient::ConnectionRAII::~ConnectionRAII() {
     }
 }
 
-};
+} // namespace quadcam
 

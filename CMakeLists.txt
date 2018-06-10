@@ -20,8 +20,8 @@ endif()
 
 # Libraries
 add_library(quad_cam_lib
-    include/camera/snapcam.h
-    src/camera/snapcam.cc
+    include/camera/quadcam.h
+    src/camera/quadcam.cc
 )
 target_link_libraries(quad_cam_lib ${CAMERA_LIBS})
 

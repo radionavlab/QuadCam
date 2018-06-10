@@ -19,16 +19,16 @@
 #include <csignal>
 
 
-namespace snapcam {
+namespace quadcam {
 
-CameraServer::CameraServer(std::string path) 
+CameraServer::CameraServer(const std::string& path) 
     : path_(path) {
 
     // Configure: Ignore broken pipes
     std::signal(SIGPIPE, SIG_IGN);
     
     // Start the camera
-    this->StartCamera();
+    // this->StartCamera();
 
     struct sockaddr_un server_address;
     constexpr size_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
@@ -61,32 +61,21 @@ CameraServer::CameraServer(std::string path)
 };
 
 void CameraServer::FrameHandler(camera::ICameraFrame* frame) {
-    if(this->camera_->cameraType() == CAM_FORWARD) {
+    if(this->camera_->CameraType() == CAM_FORWARD) {
         this->PublishFrame(frame, 640, 480);
-    } else if(this->camera_->cameraType() == CAM_DOWN) {
+    } else if(this->camera_->CameraType() == CAM_DOWN) {
         std::cout << "This feature not yet implemented! Images can stream, but the bytes are out of order. Please fix this in node.cc!" << std::endl;
     }
 };
 
-void CameraServer::StartCamera() {
-    // TODO: Hard-coded camera config values
-    CamConfig cfg;
-    cfg.exposure        = 100;
-    cfg.gain            = 50;
-    cfg.cameraId        = 1;
-    cfg.func            = CAM_FORWARD;
-    cfg.previewSize     = CameraSizes::UHDSize();
-    cfg.focusMode       = "continuous-video";
-    cfg.whiteBalance    = "auto";
-    cfg.ISO             = "auto";
-    cfg.previewFormat   = "yuv420sp";
-    cfg.brightness      = 3;
-    cfg.sharpness       = 18;
-    cfg.contrast        = 5;
+// void CameraServer::ConfigureCameraDefault() {
+// 
+// };
 
-    this->camera_ = std::make_shared<SnapCam>(cfg);
-    this->camera_->setListener(std::bind(&CameraServer::FrameHandler, this, std::placeholders::_1));
-    this->camera_->start();
+void CameraServer::StartCamera() {
+    this->camera_ = std::make_shared<QuadCam>();
+    this->camera_->SetListener(std::bind(&CameraServer::FrameHandler, this, std::placeholders::_1));
+    this->camera_->Start();
 };
 
 CameraServer::~CameraServer() {
@@ -130,7 +119,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
             +       std::to_string(data_size) 
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
-        SendFD(client_fd, frame_fd, frame_info);
+        SendFD(frame_fd, client_fd, frame_info);
     }
   
     // Permit subscribers to use the frame for 200 ms 
@@ -139,7 +128,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     this->busy_publishing = false;
 }
 
-void CameraServer::SendFD(const FD& client_fd, const FD& frame_fd, const std::string& frame_info) {
+void CameraServer::SendFD(const FD& frame_fd, const FD& client_fd, const std::string& frame_info) {
 
     struct msghdr msg = { 0 };
     char buf[CMSG_SPACE(sizeof(frame_fd))];
@@ -175,4 +164,4 @@ void CameraServer::ReportError(const std::string& msg) {
     exit(EXIT_FAILURE);
 }
 
-}; // namespace snapcam
+}; // namespace quadcam
