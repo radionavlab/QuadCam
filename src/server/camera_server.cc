@@ -26,9 +26,6 @@ CameraServer::CameraServer(const std::string& path)
 
     // Configure: Ignore broken pipes
     std::signal(SIGPIPE, SIG_IGN);
-    
-    // Start the camera
-    // this->StartCamera();
 
     struct sockaddr_un server_address;
     constexpr size_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
@@ -123,7 +120,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     }
   
     // Permit subscribers to use the frame for 200 ms 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));  
+    // std::this_thread::sleep_for(std::chrono::milliseconds(200));  
 
     this->busy_publishing = false;
 }
