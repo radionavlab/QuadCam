@@ -124,17 +124,21 @@ void QuadCam::UpdateExposure(int exposure) {
 
 void QuadCam::Start() {
     // Start the camera preview and recording. Will start pushing frames asynchronously to the callbacks
-    Initialize();
+    this->Initialize();
     camera_->startPreview();
     camera_->startRecording();
 }
 
-QuadCam::~QuadCam() {
+void QuadCam::Stop() {
     camera_->stopRecording();
     camera_->stopPreview();
 
     /* release camera device */
     camera::ICameraDevice::deleteInstance(&camera_);
+}
+
+QuadCam::~QuadCam() {
+    this->Stop();
 }
 
 void QuadCam::onError() {

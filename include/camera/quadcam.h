@@ -59,7 +59,9 @@ public:
 
 	void SetListener(CallbackFunction fun);  // register a function callback
         void Start();
+        void Stop();
         int CameraType();
+        void Configure(const CamConfig& cfg);
 
         void UpdateGain(int gain);
         void UpdateExposure(int exposure);
@@ -73,7 +75,6 @@ public:
 
 private:
 	void Initialize();
-        void Configure(const CamConfig& cfg);
 
 	camera::ICameraDevice *camera_;
 	camera::CameraParams params_;
