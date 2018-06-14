@@ -1,4 +1,4 @@
-add_library(camera_wrapper
+add_library(camera_wrapper STATIC
     quadcam.cc
 )
 

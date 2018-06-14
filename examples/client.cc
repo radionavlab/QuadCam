@@ -1,7 +1,6 @@
 // Author: Tucker Haydon
 
 #include "camera_client.h"
-#include "utils.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -30,9 +29,7 @@ int main(int argc, char** argv) {
     quadcam::CameraClient client("/tmp/camera_server");
 
     while(OK) {
-        TicToc();
         quadcam::FrameData frame_data = client.RequestFrame();
-        TicToc();
         std::cout << frame_data.meta_data.width << ", " << frame_data.meta_data.height << std::endl;
     }
 
