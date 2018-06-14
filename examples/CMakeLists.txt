@@ -10,7 +10,7 @@ set(CAMERA_CLIENT_INCLUDE_DIR "/usr/local/include/quadcam")
 set(CAMERA_CLIENT_LIBS "/usr/local/lib/quadcam/libcamera_client.a")
 
 # Include headers
-include_directories({CAMERA_CLIENT_INCLUDE_DIR})
+include_directories(${CAMERA_CLIENT_INCLUDE_DIR})
 
 # Executable
 add_executable(${PROJECT_NAME} client.cc)
