@@ -10,4 +10,4 @@ target_include_directories(
 target_link_libraries(camera_client LINK_PUBLIC utils)
 
 install(TARGETS camera_client DESTINATION /usr/local/lib/quadcam)
-install(FILES camera_client.h DESTINATION /usr/local/include/quadcam)
+install(FILES camera_client.h frame_data.h DESTINATION /usr/local/include/quadcam)

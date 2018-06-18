@@ -96,14 +96,14 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     }
 
     const size_t data_size = frame->size;
-    const FD frame_fd = frame->fd;
+    const int frame_fd = frame->fd;
 
     struct sockaddr_un client_address;
     socklen_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
 
     while(true) {
         // Accept a client
-        FD client_fd = accept(this->fd_, (struct sockaddr *) &client_address, &ADDRESS_SIZE);
+        int client_fd = accept(this->fd_, (struct sockaddr *) &client_address, &ADDRESS_SIZE);
         if (client_fd < 0) { 
                 // If no queued clients, break
                 if(errno == EWOULDBLOCK) {
@@ -116,7 +116,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
             +       std::to_string(data_size) 
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
-        SendFD(frame_fd, client_fd, frame_info);
+        Sendint(frame_fd, client_fd, frame_info);
         close(client_fd);
     }
   
@@ -126,7 +126,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     this->busy_publishing = false;
 }
 
-void CameraServer::SendFD(const FD& frame_fd, const FD& client_fd, const std::string& frame_info) {
+void CameraServer::Sendint(const int& frame_fd, const int& client_fd, const std::string& frame_info) {
 
     struct msghdr msg = { 0 };
     char buf[CMSG_SPACE(sizeof(frame_fd))];
@@ -150,7 +150,7 @@ void CameraServer::SendFD(const FD& frame_fd, const FD& client_fd, const std::st
     if (sendmsg(client_fd, &msg, 0) < 0) {
         // Ignore broken pipes
         if(errno != EPIPE) {
-            this->ReportError("Failed to send FD.");
+            this->ReportError("Failed to send int.");
         }
     }
 }

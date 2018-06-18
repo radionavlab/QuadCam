@@ -8,7 +8,6 @@
 #include <memory>
 
 namespace quadcam {
-    typedef int FD;
 
     typedef struct {
         uint32_t data_size;

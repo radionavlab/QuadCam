@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "frame_data.h"
 
 #include <string>
 
@@ -15,7 +15,7 @@ public:
 
 private:
     std::string path_;
-    FD server_fd_;
+    int server_fd_;
 
     void ReportError(const char* msg);
     void Connect();
