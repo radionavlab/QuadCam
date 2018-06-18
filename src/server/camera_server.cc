@@ -117,6 +117,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
         SendFD(frame_fd, client_fd, frame_info);
+        close(client_fd);
     }
   
     // Permit subscribers to use the frame for 200 ms 
