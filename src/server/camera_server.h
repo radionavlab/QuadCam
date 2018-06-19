@@ -13,22 +13,26 @@ namespace quadcam {
 
 class CameraServer {
 public:
-   CameraServer(const std::string& path); 
+   CameraServer(const std::string& server_path,
+                const std::string& camera_type,
+                const std::string& camera_resolution); 
    ~CameraServer(); 
 
     void StartCamera();
-    void ConfigureCamera(const CamConfig& cfg);
-    void ConfigureCameraDefault();
-
 
 private:
+    CamConfig ComposeCamConfig();
     void ReportError(const std::string& msg);
-    void Sendint(const int& fd, const int& socket_fd, const std::string& frame_info);
+    void SendFD(const int& fd, const int& socket_fd, const std::string& frame_info);
     void FrameHandler(camera::ICameraFrame* frame);
     void PublishFrame(camera::ICameraFrame* frame, const size_t& width, const size_t& height);
 
     int fd_;
-    std::string path_;
+    std::string server_path_;
+    std::string camera_type_;
+    std::string camera_resolution_;
+    int image_width_;
+    int image_height_;
     std::shared_ptr<QuadCam> camera_;
     std::atomic<bool> busy_publishing{false};
 

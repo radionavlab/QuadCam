@@ -21,8 +21,12 @@
 
 namespace quadcam {
 
-CameraServer::CameraServer(const std::string& path) 
-    : path_(path) {
+CameraServer::CameraServer(const std::string& server_path,
+                           const std::string& camera_type,
+                           const std::string& camera_resolution) 
+    : server_path_(server_path),
+      camera_type_(camera_type),
+      camera_resolution_(camera_resolution) {
 
     // Configure: Ignore broken pipes
     std::signal(SIGPIPE, SIG_IGN);
@@ -38,7 +42,7 @@ CameraServer::CameraServer(const std::string& path)
     // Clear and fill server_address
     memset(&server_address, 0, ADDRESS_SIZE);
     server_address.sun_family = AF_UNIX;
-    strncpy(server_address.sun_path, this->path_.c_str(), sizeof(server_address.sun_path) - 1);
+    strncpy(server_address.sun_path, this->server_path_.c_str(), sizeof(server_address.sun_path) - 1);
 
     // Socket options
     constexpr bool OPT = true;
@@ -59,18 +63,48 @@ CameraServer::CameraServer(const std::string& path)
 
 void CameraServer::FrameHandler(camera::ICameraFrame* frame) {
     if(this->camera_->CameraType() == CAM_FORWARD) {
-        this->PublishFrame(frame, 640, 480);
+        this->PublishFrame(frame, this->image_width_, this->image_height_);
     } else if(this->camera_->CameraType() == CAM_DOWN) {
         std::cout << "This feature not yet implemented! Images can stream, but the bytes are out of order. Please fix this in node.cc!" << std::endl;
     }
 };
 
-// void CameraServer::ConfigureCameraDefault() {
-// 
-// };
+CamConfig CameraServer::ComposeCamConfig() {
+    CamConfig cfg = QuadCam::DEFAULT_CONFIG;
+
+    if(this->camera_type_ == "forward") {
+        cfg.cameraId = 1;
+        cfg.previewFormat = "yuv420sp";
+        cfg.func = CAM_FORWARD;
+        if(this->camera_resolution_ == "4k") {
+            cfg.previewSize = CameraSizes::UHDSize();
+            cfg.pictureSize = CameraSizes::UHDSize();
+        } else if(this->camera_resolution_ == "1080p") {
+            cfg.previewSize = CameraSizes::FHDSize();
+            cfg.pictureSize = CameraSizes::FHDSize();
+        } else if(this->camera_resolution_ == "720p") {
+            cfg.previewSize = CameraSizes::HDSize();
+            cfg.pictureSize = CameraSizes::HDSize();
+        } else {
+            cfg.previewSize = CameraSizes::VGASize();
+            cfg.pictureSize = CameraSizes::VGASize();
+        }
+    } else {
+        cfg.cameraId = 0;
+        cfg.previewFormat = "yuv420sp";
+        cfg.func = CAM_DOWN;
+        cfg.previewSize = CameraSizes::VGASize();
+        cfg.pictureSize = CameraSizes::VGASize();
+    }
+
+    this->image_width_ = cfg.previewSize.width;
+    this->image_height_ = cfg.previewSize.height;
+
+    return cfg;
+}
 
 void CameraServer::StartCamera() {
-    this->camera_ = std::make_shared<QuadCam>();
+    this->camera_ = std::make_shared<QuadCam>(this->ComposeCamConfig());
     this->camera_->SetListener(std::bind(&CameraServer::FrameHandler, this, std::placeholders::_1));
     this->camera_->Start();
 };
@@ -85,7 +119,7 @@ CameraServer::~CameraServer() {
     if (close(this->fd_) < 0) { 
         this->ReportError("Client Socket Close");
     }
-    unlink(this->path_.c_str());
+    unlink(this->server_path_.c_str());
 };
 
 void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width, const size_t& height) {
@@ -116,7 +150,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
             +       std::to_string(data_size) 
             + "," + std::to_string(width) 
             + "," + std::to_string(height);
-        Sendint(frame_fd, client_fd, frame_info);
+        SendFD(frame_fd, client_fd, frame_info);
         close(client_fd);
     }
   
@@ -126,7 +160,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     this->busy_publishing = false;
 }
 
-void CameraServer::Sendint(const int& frame_fd, const int& client_fd, const std::string& frame_info) {
+void CameraServer::SendFD(const int& frame_fd, const int& client_fd, const std::string& frame_info) {
 
     struct msghdr msg = { 0 };
     char buf[CMSG_SPACE(sizeof(frame_fd))];
