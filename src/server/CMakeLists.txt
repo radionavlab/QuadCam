@@ -5,6 +5,7 @@ add_library(camera_server
 target_include_directories(
     camera_server PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common"
 )
 
 target_link_libraries(camera_server LINK_PUBLIC utils camera_wrapper)

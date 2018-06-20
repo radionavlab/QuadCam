@@ -3,6 +3,7 @@
 #pragma once
 
 #include "quadcam.h"
+#include "frame_data.h"
 
 #include <string>
 #include <memory>
@@ -23,7 +24,7 @@ public:
 private:
     CamConfig ComposeCamConfig();
     void ReportError(const std::string& msg);
-    void SendFD(const int& fd, const int& socket_fd, const std::string& frame_info);
+    void SendFD(const int& fd, const int& socket_fd, FrameMetaData frame_meta_data);
     void FrameHandler(camera::ICameraFrame* frame);
     void PublishFrame(camera::ICameraFrame* frame, const size_t& width, const size_t& height);
 

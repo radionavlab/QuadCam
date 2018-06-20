@@ -132,6 +132,12 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     const size_t data_size = frame->size;
     const int frame_fd = frame->fd;
 
+    FrameMetaData frame_meta_data{
+            .data_size = data_size,
+            .width = width,
+            .height = height
+    };
+
     struct sockaddr_un client_address;
     socklen_t ADDRESS_SIZE = sizeof(struct sockaddr_un);
 
@@ -146,11 +152,7 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
                     this->ReportError("Error connecting client");
                 }
         }
-        std::string frame_info = "" 
-            +       std::to_string(data_size) 
-            + "," + std::to_string(width) 
-            + "," + std::to_string(height);
-        SendFD(frame_fd, client_fd, frame_info);
+        SendFD(frame_fd, client_fd, frame_meta_data);
         close(client_fd);
     }
   
@@ -160,12 +162,12 @@ void CameraServer::PublishFrame(camera::ICameraFrame* frame, const size_t& width
     this->busy_publishing = false;
 }
 
-void CameraServer::SendFD(const int& frame_fd, const int& client_fd, const std::string& frame_info) {
+void CameraServer::SendFD(const int& frame_fd, const int& client_fd, FrameMetaData frame_meta_data) {
 
     struct msghdr msg = { 0 };
     char buf[CMSG_SPACE(sizeof(frame_fd))];
     memset(buf, '\0', sizeof(buf));
-    struct iovec io = { .iov_base = (void*)frame_info.c_str(), .iov_len = frame_info.size() + 1 }; 
+    struct iovec io = { .iov_base = (void*)(&frame_meta_data), .iov_len = sizeof(FrameMetaData) }; 
 
     msg.msg_iov = &io;
     msg.msg_iovlen = 1;

@@ -44,7 +44,7 @@ FrameData CameraClient::RequestFrame() {
 
     // Extract the meta data from the message
     FrameMetaData meta_data;
-    meta_data.Deserialize(std::string((char*)io.iov_base));
+    memcpy(&meta_data, static_cast<FrameMetaData*>(io.iov_base), sizeof(FrameMetaData));
 
     struct cmsghdr * c_msg = CMSG_FIRSTHDR(&msg);
     unsigned char * c_data = CMSG_DATA(c_msg);
